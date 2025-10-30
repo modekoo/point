@@ -5,10 +5,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class PointContoller<T> {
+public class PointController {
 
     @GetMapping("/health")
-    public ResponseEntity<T> healthCheck(){
+    public <T> ResponseEntity<T> healthCheck(){
         return ResponseEntity.ok().build();
     }
 
