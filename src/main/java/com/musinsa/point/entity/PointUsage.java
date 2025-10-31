@@ -1,5 +1,6 @@
 package com.musinsa.point.entity;
 
+import com.musinsa.point.enums.UsageStatus;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,12 +13,12 @@ public class PointUsage extends DateEntity{
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "point_event_key", nullable = false
-            , foreignKey = @ForeignKey(name = "fk_point_event_key"))
+            , foreignKey = @ForeignKey(name = "fk_point_usage_point_event_key"))
     private PointEvent pointEvent;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_key", nullable = false
-            , foreignKey = @ForeignKey(name = "fk_order_key"))
+            , foreignKey = @ForeignKey(name = "fk_point_usage_order_key"))
     private Order order;
 
     @Column(name = "usage_amount")
@@ -27,6 +28,6 @@ public class PointUsage extends DateEntity{
     private Long usage_balance = 0L;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "usage_type")
-    private String usageType;
+    @Column(name = "usage_status")
+    private UsageStatus usageStatus;
 }

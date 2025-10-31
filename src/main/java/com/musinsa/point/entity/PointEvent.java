@@ -1,5 +1,6 @@
 package com.musinsa.point.entity;
 
+import com.musinsa.point.enums.EventType;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,10 +14,10 @@ public class PointEvent extends DateEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "point_info_key", nullable = false
-                , foreignKey = @ForeignKey(name = "fk_point_info_key"))
+                , foreignKey = @ForeignKey(name = "fk_point_event_point_info_key"))
     private UserPointInfo userPointInfo;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type")
-    private String eventType;
+    private EventType eventType;
 }

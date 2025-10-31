@@ -1,5 +1,7 @@
 package com.musinsa.point.entity;
 
+import com.musinsa.point.enums.PointStatus;
+import com.musinsa.point.enums.PointType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -10,16 +12,16 @@ public class PointItem extends DateEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "point_item_key")
-    private String pointItemKey;
+    private Long pointItemKey;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "point_info_key", nullable = false
-                , foreignKey = @ForeignKey(name = "fk_point_info_key"))
+                , foreignKey = @ForeignKey(name = "fk_point_item_point_info_key"))
     private UserPointInfo userPointInfo;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "point_event_key", nullable = false
-                , foreignKey = @ForeignKey(name = "fk_point_event_key"))
+                , foreignKey = @ForeignKey(name = "fk_point_item_point_event_key"))
     private PointEvent pointEvent;
 
     @Column(name = "point_amount")
@@ -27,7 +29,7 @@ public class PointItem extends DateEntity{
 
     @Enumerated(EnumType.STRING)
     @Column(name = "point_type")
-    private String pointType;
+    private PointType pointType;
 
     @Column(name = "manual_flag")
     private boolean menualFlag = false;
@@ -37,7 +39,7 @@ public class PointItem extends DateEntity{
 
     @Enumerated(EnumType.STRING)
     @Column(name = "point_status")
-    private String pointStatus;
+    private PointStatus pointStatus;
 
 
 

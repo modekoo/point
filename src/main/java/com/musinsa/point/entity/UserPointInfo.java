@@ -1,10 +1,6 @@
 package com.musinsa.point.entity;
 
 import jakarta.persistence.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_point_info")
@@ -17,7 +13,7 @@ public class UserPointInfo extends DateEntity{
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_key", unique = true, nullable = false
-                , foreignKey = @ForeignKey(name = "fk_user_key"))
+                , foreignKey = @ForeignKey(name = "fk_user_point_info_user_key"))
     private User user;
 
     @Column(name = "point_reward_max")
@@ -28,8 +24,5 @@ public class UserPointInfo extends DateEntity{
 
     @Version
     @Column(name = "version")
-    private String version;
-
-
-
+    private Long version;
 }
