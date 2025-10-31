@@ -1,7 +1,12 @@
 package com.musinsa.point.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "user_point_info")
 public class UserPointInfo extends DateEntity{
@@ -25,4 +30,12 @@ public class UserPointInfo extends DateEntity{
     @Version
     @Column(name = "version")
     private Long version;
+
+    private UserPointInfo(User user){
+        this.user = user;
+    }
+
+    public static UserPointInfo of(User user){
+        return new UserPointInfo(user);
+    }
 }
