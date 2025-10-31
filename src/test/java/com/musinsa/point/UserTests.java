@@ -1,9 +1,9 @@
 package com.musinsa.point;
 
-import com.musinsa.point.entity.User;
-import com.musinsa.point.entity.UserPointInfo;
-import com.musinsa.point.repository.UserPointRepository;
-import com.musinsa.point.repository.UserRepository;
+import com.musinsa.point.domain.entity.User;
+import com.musinsa.point.domain.entity.UserPointInfo;
+import com.musinsa.point.domain.repository.UserPointRepository;
+import com.musinsa.point.domain.repository.UserRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,15 +40,12 @@ class UserTests {
                 .content(reqJsonStr)
         ).andExpect(status().isOk());
 
-        Optional<User> user = userRepository.findByUserId("koo");
+        Optional<User> user = userRepository.findById("koo");
         if(user.isEmpty()) Assertions.fail();
         Assertions.assertEquals("koo", user.get().getUserId());
 
-        Optional<UserPointInfo> userPointInfo = userPointRepository.findById(user.get().getUserKey());
+        Optional<UserPointInfo> userPointInfo = userPointRepository.findByUser_UserId(user.get().getUserId());
         if(userPointInfo.isEmpty()) Assertions.fail();
 
 	}
-
-
-
 }
