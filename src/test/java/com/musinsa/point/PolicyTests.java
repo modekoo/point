@@ -51,7 +51,7 @@ class PolicyTests {
     }
 
 	@Test
-	void setPointPolicy() throws Exception {
+	void setPointPolicyTest() throws Exception {
 
         PointPolicyReqDto pointPolicyReqDto = PointPolicyReqDto.of("koo", 3000L, 50000L);
         ObjectMapper mapper = new ObjectMapper();

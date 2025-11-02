@@ -25,6 +25,16 @@ public class PointItemService {
         return pointItemRepository.save(pointItem);
     }
 
+    public PointItem getPointItem(Long pointItemKey){
+        return pointItemRepository.findById(pointItemKey).orElseThrow(() -> new ApiException(ErrorCode.POINT_NOT_FOUND));
+    }
+
+    public PointItem setPointCancel(Long pointItemKey){
+        PointItem pointItem = getPointItem(pointItemKey);
+        pointItem.pointCancel();
+        return pointItem;
+    }
+
     public List<PointItem> getPointItemList(String userId){
         return pointItemRepository.findByUserId(userId).orElse(new ArrayList<>());
     }

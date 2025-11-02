@@ -1,5 +1,7 @@
 package com.musinsa.point.domain.controller;
 
+import com.musinsa.point.domain.dto.Point.PointCancelReqDto;
+import com.musinsa.point.domain.dto.Point.PointCancelResDto;
 import com.musinsa.point.domain.dto.Point.PointEarnReqDto;
 import com.musinsa.point.domain.dto.Point.PointEarnResDto;
 import com.musinsa.point.domain.service.PointService;
@@ -18,8 +20,14 @@ public class PointController {
 
     @PostMapping("/earn")
     public ResponseEntity<CommonResponseDto<PointEarnResDto>> earnPoint(@RequestBody @Valid PointEarnReqDto pointEarnReqDTO){
-        PointEarnResDto pointEarnResDto = pointService.earnPoint(pointEarnReqDTO);
-        return ResponseEntity.ok(CommonResponseDto.success(pointEarnResDto));
+        CommonResponseDto<PointEarnResDto> res = pointService.earnPoint(pointEarnReqDTO);
+        return ResponseEntity.ok(res);
+    }
+
+    @PutMapping("/cancel")
+    public ResponseEntity<CommonResponseDto<PointCancelResDto>> cancelPoint(@RequestBody @Valid PointCancelReqDto pointCancelReqDto){
+        CommonResponseDto<PointCancelResDto> res = pointService.cancelPoint(pointCancelReqDto);
+        return ResponseEntity.ok(res);
     }
 
 }

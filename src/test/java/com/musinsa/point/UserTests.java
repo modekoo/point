@@ -29,7 +29,7 @@ class UserTests {
     UserPointRepository userPointRepository;
 
 	@Test
-	void createUserAndUserPointInfo() throws Exception {
+	void createUserAndUserPointInfoTest() throws Exception {
 
         String reqJsonStr = """
                 {"userId":"koo"}

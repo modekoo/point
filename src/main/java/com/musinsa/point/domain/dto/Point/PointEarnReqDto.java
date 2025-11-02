@@ -3,8 +3,10 @@ package com.musinsa.point.domain.dto.Point;
 import com.musinsa.point.consts.PointConst;
 import com.musinsa.point.exception.ApiException;
 import com.musinsa.point.exception.ErrorCode;
-import jakarta.validation.constraints.*;
-import org.springframework.format.annotation.NumberFormat;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 public record PointEarnReqDto (
     @NotBlank @Size(max = 32)

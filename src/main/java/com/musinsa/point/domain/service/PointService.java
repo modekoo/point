@@ -1,6 +1,8 @@
 package com.musinsa.point.domain.service;
 
 import com.musinsa.point.config.PointEarnMode;
+import com.musinsa.point.domain.dto.Point.PointCancelReqDto;
+import com.musinsa.point.domain.dto.Point.PointCancelResDto;
 import com.musinsa.point.domain.dto.Point.PointEarnReqDto;
 import com.musinsa.point.domain.dto.Point.PointEarnResDto;
 import com.musinsa.point.domain.dto.pointPolicy.PointPolicyResDto;
@@ -9,6 +11,8 @@ import com.musinsa.point.domain.entity.PointItem;
 import com.musinsa.point.domain.entity.PointPolicy;
 import com.musinsa.point.domain.entity.UserPointInfo;
 import com.musinsa.point.domain.enums.EventType;
+import com.musinsa.point.domain.enums.PointStatus;
+import com.musinsa.point.dto.CommonResponseDto;
 import com.musinsa.point.exception.ApiException;
 import com.musinsa.point.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +37,7 @@ public class PointService {
      * 부분 적립(1회 한도 금액, 적립 금액 최대까지), 튕겨내야하나
      */
     @Transactional
-    public PointEarnResDto earnPoint(PointEarnReqDto pointEarnReqDTO){
+    public CommonResponseDto<PointEarnResDto> earnPoint(PointEarnReqDto pointEarnReqDTO){
         PointPolicy pointPolicy = pointPolicyService.getUserPolicy(pointEarnReqDTO.userId());
         UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointEarnReqDTO.userId());
 
@@ -56,7 +60,20 @@ public class PointService {
         PointEvent pointEvent = pointEventService.createPointEvent(EventType.EARN, userPointInfo);
         PointItem pointItem = pointItemService.createPointItem(userPointInfo, pointEvent, pointEarnReqDTO.pointAmount(), pointEarnReqDTO.menualFlag(), pointEarnReqDTO.pointExpirationDt());
 
-        return PointEarnResDto.of(pointItem.getPointAmount(), userPointInfo.getPointTotalBalance(), pointPolicy.getPointTotalLimit());
+        return CommonResponseDto.success(PointEarnResDto.of(pointItem.getPointAmount(), userPointInfo.getPointTotalBalance(), pointPolicy.getPointTotalLimit()));
+    }
+
+    @Transactional
+    public CommonResponseDto<PointCancelResDto> cancelPoint(PointCancelReqDto pointCancelReqDto){
+        PointItem pointItem = pointItemService.getPointItem(pointCancelReqDto.pointItemKey());
+        PointStatus pointStatus = pointItem.getPointStatus();
+
+        if(pointStatus.isCanCancel()) {
+            pointItem = pointItemService.setPointCancel(pointItem.getPointItemKey());
+            return CommonResponseDto.success(PointCancelResDto.from(pointItem));
+        }
+        else
+            return CommonResponseDto.fail(PointCancelResDto.from(pointItem), pointStatus.getMessage(), pointStatus.name());
     }
 
 }

@@ -62,6 +62,10 @@ public class PointItem extends DateEntity{
         return new PointItem(userPointInfo, event, pointType, pointAmount, menualFlag, pointExpirationDt, pointStatus);
     }
 
+    public void pointCancel(){
+        this.pointStatus = PointStatus.CANCELED;
+    }
+
 }
 
 
