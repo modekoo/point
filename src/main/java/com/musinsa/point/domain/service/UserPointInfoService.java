@@ -17,13 +17,11 @@ public class UserPointInfoService {
 
     private final UserPointRepository userPointRepository;
 
-    @Transactional
     public UserPointInfo getUserPointInfo(String userId){
         return userPointRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
     }
 
-    @Transactional
     public UserPointInfo setUserPointBalance(UserPointInfo userPointInfo, Long balance){
         userPointInfo.setTotalBalance(balance);
         return userPointInfo;

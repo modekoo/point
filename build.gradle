@@ -25,6 +25,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    implementation "io.github.openfeign.querydsl:querydsl-jpa:7.1"
+    annotationProcessor "io.github.openfeign.querydsl:querydsl-jpa-codegen:7.1"
+
     runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

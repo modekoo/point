@@ -14,7 +14,7 @@ public record PointEarnReqDto (
     @NotNull @Positive
     Long pointAmount,
     //어드민 여부 기본값 false
-    boolean menualFlag,
+    boolean manualFlag,
     //포인트 만료 기간 기본값 365일
     Long pointExpirationDt
 )
@@ -29,8 +29,8 @@ public record PointEarnReqDto (
         this(userId, pointAmount, false, PointConst.POINT_EXPIRE_DAYS);
     }
 
-    public static PointEarnReqDto of(String userId, Long pointAmount, boolean menualFlag, Long pointExpirationDt){
-        return new PointEarnReqDto(userId, pointAmount, menualFlag, pointExpirationDt);
+    public static PointEarnReqDto of(String userId, Long pointAmount, boolean manualFlag, Long pointExpirationDt){
+        return new PointEarnReqDto(userId, pointAmount, manualFlag, pointExpirationDt);
     }
 
     public static PointEarnReqDto of(String userId, Long pointAmount) {

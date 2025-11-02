@@ -1,8 +1,13 @@
 package com.musinsa.point.domain.entity;
 
-import com.musinsa.point.domain.enums.UsageStatus;
+import com.musinsa.point.domain.enums.PointUsageStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "point_usage")
 public class PointUsage extends DateEntity{
@@ -22,12 +27,25 @@ public class PointUsage extends DateEntity{
     private Order order;
 
     @Column(name = "usage_amount")
-    private Long usageAmount = 0L;
+    private Long usageAmount;
 
     @Column(name = "usage_balance")
-    private Long usage_balance = 0L;
+    private Long usageBalance;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "usage_status")
-    private UsageStatus usageStatus;
+    private PointUsageStatus pointUsageStatus;
+
+    public PointUsage(PointEvent pointEvent, Order order, Long usageAmount, Long usageBalance, PointUsageStatus pointUsageStatus) {
+        this.pointEvent = pointEvent;
+        this.order = order;
+        this.usageAmount = usageAmount;
+        this.usageBalance = usageBalance;
+        this.pointUsageStatus = pointUsageStatus;
+    }
+
+    public static PointUsage of(PointEvent pointEvent, Order order, Long usageAmount, Long usageBalance, PointUsageStatus pointUsageStatus){
+        return new PointUsage(pointEvent, order, usageAmount, usageBalance, pointUsageStatus);
+    }
+
 }

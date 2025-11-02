@@ -37,7 +37,7 @@ public class PointItem extends DateEntity{
     private PointType pointType;
 
     @Column(name = "manual_flag")
-    private boolean menualFlag = false;
+    private boolean manualFlag = false;
 
     @Column(name = "point_expiration_dt")
     private LocalDateTime pointExpirationDt;
@@ -47,23 +47,27 @@ public class PointItem extends DateEntity{
     private PointStatus pointStatus;
 
     private PointItem(UserPointInfo userPointInfo, PointEvent pointEvent, PointType pointType
-                    , Long pointAmount,boolean menualFlag, Long pointExpirationDt, PointStatus pointStatus) {
+                    , Long pointAmount, boolean manualFlag, Long pointExpirationDt, PointStatus pointStatus) {
         this.userPointInfo = userPointInfo;
         this.pointEvent = pointEvent;
         this.pointType = pointType;
         this.pointAmount = pointAmount;
-        this.menualFlag = menualFlag;
+        this.manualFlag = manualFlag;
         this.pointExpirationDt = LocalDateTime.now().plusDays(pointExpirationDt);
         this.pointStatus = pointStatus;
     }
 
     public static PointItem of(UserPointInfo userPointInfo, PointEvent event, PointType pointType
-                            , Long pointAmount, boolean menualFlag, Long pointExpirationDt, PointStatus pointStatus){
-        return new PointItem(userPointInfo, event, pointType, pointAmount, menualFlag, pointExpirationDt, pointStatus);
+                            , Long pointAmount, boolean manualFlag, Long pointExpirationDt, PointStatus pointStatus){
+        return new PointItem(userPointInfo, event, pointType, pointAmount, manualFlag, pointExpirationDt, pointStatus);
     }
 
     public void pointCancel(){
         this.pointStatus = PointStatus.CANCELED;
+    }
+
+    public void pointUsed(){
+        this.pointStatus = PointStatus.USED;
     }
 
 }

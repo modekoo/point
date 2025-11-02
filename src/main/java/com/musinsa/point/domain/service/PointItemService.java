@@ -20,8 +20,8 @@ public class PointItemService {
 
     private final PointItemRepository pointItemRepository;
 
-    public PointItem createPointItem(UserPointInfo userPointInfo, PointEvent pointEvent, Long pointAmount, boolean menualFlag, Long pointExpirationDt){
-        PointItem pointItem = PointItem.of(userPointInfo, pointEvent, PointType.EARN, pointAmount, menualFlag, pointExpirationDt, PointStatus.ACTIVE);
+    public PointItem createPointItem(UserPointInfo userPointInfo, PointEvent pointEvent, Long pointAmount, boolean manualFlag, Long pointExpirationDt){
+        PointItem pointItem = PointItem.of(userPointInfo, pointEvent, PointType.EARN, pointAmount, manualFlag, pointExpirationDt, PointStatus.ACTIVE);
         return pointItemRepository.save(pointItem);
     }
 
@@ -36,7 +36,13 @@ public class PointItemService {
     }
 
     public List<PointItem> getPointItemList(String userId){
-        return pointItemRepository.findByUserId(userId).orElse(new ArrayList<>());
+        List<PointItem> pointItemList = pointItemRepository.findByUserId(userId);
+        return pointItemList != null ? pointItemList : new ArrayList<>();
+    }
+
+    public List<PointItem> getPointItemListByUserIdActive(String userId){
+        List<PointItem> pointItemList = pointItemRepository.findByUserIdAndPointStatus(userId, PointStatus.ACTIVE);
+        return pointItemList != null ? pointItemList : new ArrayList<>();
     }
 
 }

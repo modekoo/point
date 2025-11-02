@@ -1,5 +1,5 @@
 package com.musinsa.point.domain.enums;
 
-public enum UsageStatus {
+public enum PointUsageStatus {
     USED, CANCEL, USE_CANCELED
 }

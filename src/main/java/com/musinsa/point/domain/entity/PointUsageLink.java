@@ -1,7 +1,12 @@
 package com.musinsa.point.domain.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "point_usage_link")
 public class PointUsageLink extends DateEntity{
@@ -22,6 +27,16 @@ public class PointUsageLink extends DateEntity{
     private PointItem pointItem;
 
     @Column(name = "point_usage_amount")
-    private Long pointUsageAmount = 0L;
+    private Long pointUsageAmount;
+
+    public PointUsageLink(PointUsage pointUsage, PointItem pointItem, Long pointUsageAmount) {
+        this.pointUsage = pointUsage;
+        this.pointItem = pointItem;
+        this.pointUsageAmount = pointUsageAmount;
+    }
+
+    public static PointUsageLink of(PointUsage pointUsage, PointItem pointItem, Long pointUsageAmount){
+        return new PointUsageLink(pointUsage, pointItem, pointUsageAmount);
+    }
 
 }

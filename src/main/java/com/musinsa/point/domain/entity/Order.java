@@ -2,7 +2,12 @@ package com.musinsa.point.domain.entity;
 
 import com.musinsa.point.domain.enums.OrderStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "orders")
 public class Order extends DateEntity{
@@ -13,4 +18,14 @@ public class Order extends DateEntity{
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status")
     private OrderStatus orderStatus;
+
+    private Order(String orderKey){
+        this.orderKey = orderKey;
+        orderStatus = OrderStatus.PROCESSING;
+    }
+
+    public static Order of(String orderKey){
+        return new Order(orderKey);
+    }
+
 }
