@@ -62,12 +62,16 @@ public class PointItem extends DateEntity{
         return new PointItem(userPointInfo, event, pointType, pointAmount, manualFlag, pointExpirationDt, pointStatus);
     }
 
-    public void pointCancel(){
+    public void setPointCancel(){
         this.pointStatus = PointStatus.CANCELED;
     }
 
-    public void pointUsed(){
+    public void setPointUsed(){
         this.pointStatus = PointStatus.USED;
+    }
+
+    public void setPointActive(){
+        this.pointStatus = PointStatus.ACTIVE;
     }
 
 }

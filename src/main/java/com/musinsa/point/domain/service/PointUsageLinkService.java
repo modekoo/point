@@ -1,5 +1,6 @@
 package com.musinsa.point.domain.service;
 
+import com.musinsa.point.domain.dto.pointUsageLink.CancelablePointDto;
 import com.musinsa.point.domain.entity.PointItem;
 import com.musinsa.point.domain.entity.PointUsage;
 import com.musinsa.point.domain.entity.PointUsageLink;
@@ -25,6 +26,10 @@ public class PointUsageLinkService {
 
     public List<PointUsageLink> getPointUsageLinkListByOrderKey(String orderKey){
         return pointUsageLinkRepository.findByPointUsage_Order_OrderKey(orderKey);
+    }
+
+    public List<CancelablePointDto> getCancelablePointList(String orderKey){
+        return pointUsageLinkRepository.findCancelablePoint(orderKey);
     }
 
 }

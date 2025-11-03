@@ -5,16 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.musinsa.point.domain.dto.Point.*;
 import com.musinsa.point.domain.dto.pointPolicy.PointPolicyReqDto;
-import com.musinsa.point.domain.entity.PointItem;
-import com.musinsa.point.domain.entity.PointPolicy;
-import com.musinsa.point.domain.entity.PointUsageLink;
-import com.musinsa.point.domain.entity.UserPointInfo;
+import com.musinsa.point.domain.entity.*;
 import com.musinsa.point.domain.enums.PointStatus;
+import com.musinsa.point.domain.repository.PointUsageRepository;
 import com.musinsa.point.domain.repository.UserPointRepository;
-import com.musinsa.point.domain.service.PointItemService;
-import com.musinsa.point.domain.service.PointPolicyService;
-import com.musinsa.point.domain.service.PointUsageLinkService;
-import com.musinsa.point.domain.service.UserPointInfoService;
+import com.musinsa.point.domain.repository.pointUsageLink.PointUsageLinkRepository;
+import com.musinsa.point.domain.service.*;
 import com.musinsa.point.dto.CommonResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
@@ -58,6 +54,10 @@ class PointTests {
     UserPointRepository userPointRepository;
     @Autowired
     PointUsageLinkService pointUsageLinkService;
+    @Autowired
+    PointUsageService pointUsageService;
+    @Autowired
+    PointUsageLinkRepository pointUsageLinkRepository;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -173,6 +173,9 @@ class PointTests {
             PointUseReqDto pointUseReqDto = PointUseReqDto.of("test001", 2500L, "koo");
             String reqJsonStr = objectMapper.writeValueAsString(pointUseReqDto);
 
+            UserPointInfo beforeUserPointInfo = userPointInfoService.getUserPointInfo(pointUseReqDto.userId());
+            log.debug("이전 포인트 잔량 = {}", beforeUserPointInfo.getPointTotalBalance());
+
             mockMvc.perform(post("/point/use")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(reqJsonStr)
@@ -193,5 +196,70 @@ class PointTests {
             Assertions.assertEquals(pointUseReqDto.pointUseAmount(), usedPointTotal);
         }
 
+    }
+
+    @Nested
+    class PointUseCancel{
+        @BeforeEach
+        public void setup() throws Exception {
+            PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of("koo", 2000L);
+            String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
+
+            mockMvc.perform(post("/point/earn")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(reqJsonStr)
+            ).andExpect(status().isOk());
+
+            PointEarnReqDto pointEarnReqDto2 = PointEarnReqDto.of("koo", 1000L);
+            String reqJsonStr2 = objectMapper.writeValueAsString(pointEarnReqDto2);
+
+            mockMvc.perform(post("/point/earn")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(reqJsonStr2)
+            ).andExpect(status().isOk());
+
+            PointUseReqDto pointUseReqDto = PointUseReqDto.of("test001", 2500L, "koo");
+            String reqJsonStr3 = objectMapper.writeValueAsString(pointUseReqDto);
+
+            mockMvc.perform(post("/point/use")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(reqJsonStr3)
+            ).andExpect(status().isOk());
+        }
+
+        @Test
+        public void pointUseCancel() throws Exception{
+            PointUseCancelReqDto pointUseCancelReqDto = PointUseCancelReqDto.of("test001", 2300L, "koo");
+            String reqJson = objectMapper.writeValueAsString(pointUseCancelReqDto);
+
+            mockMvc.perform(post("/point/use/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(reqJson)
+            ).andExpect(status().isOk());
+
+            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointUseCancelReqDto.userId());
+            log.debug("포인트 잔량 = {}", userPointInfo.getPointTotalBalance());
+            Assertions.assertEquals(1000+2000-2500+2300, userPointInfo.getPointTotalBalance());
+
+            List<PointUsage> pointUsageList = pointUsageService.getPointUsageByOrderKey(pointUseCancelReqDto.orderKey());
+            for(PointUsage pointUsage : pointUsageList){
+                log.debug("pointUsageKey = {}, pointUsageType = {}, pointUsageAmount = {}", pointUsage.getPointUsageKey(), pointUsage.getPointUsageType(), pointUsage.getPointUsageAmount());
+            }
+            long pointUsageSum = pointUsageList.stream().mapToLong(PointUsage::getPointUsageAmount).sum();
+            log.debug("해당 주문에 사용한 포인트 양(header) = {}", pointUsageSum);
+            Assertions.assertEquals(200L, pointUsageSum);
+
+            List<PointUsageLink> pointUsageLinkList = pointUsageLinkService.getPointUsageLinkListByOrderKey(pointUseCancelReqDto.orderKey());
+            for(PointUsageLink pointUsageLink : pointUsageLinkList){
+                log.debug("pointItemKey = {}, pointStatus = {}, pointAmount = {}, pointUsageLinkKey = {}, pointUsageLinkAmount = {}"
+                        , pointUsageLink.getPointItem().getPointItemKey(), pointUsageLink.getPointItem().getPointStatus(), pointUsageLink.getPointItem().getPointAmount()
+                        , pointUsageLink.getPointUsageLinkKey(), pointUsageLink.getPointUsageAmount());
+            }
+
+            long pointUsageLinkSum = pointUsageLinkList.stream().mapToLong(PointUsageLink::getPointUsageAmount).sum();
+            log.debug("해당 주문에 사용한 포인트 양(link) = {}", pointUsageLinkSum);
+
+            Assertions.assertEquals(2500-2300, pointUsageLinkSum);
+        }
     }
 }

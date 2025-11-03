@@ -20,19 +20,13 @@ public class PointItemService {
 
     private final PointItemRepository pointItemRepository;
 
-    public PointItem createPointItem(UserPointInfo userPointInfo, PointEvent pointEvent, Long pointAmount, boolean manualFlag, Long pointExpirationDt){
-        PointItem pointItem = PointItem.of(userPointInfo, pointEvent, PointType.EARN, pointAmount, manualFlag, pointExpirationDt, PointStatus.ACTIVE);
+    public PointItem createPointItem(UserPointInfo userPointInfo, PointEvent pointEvent, PointType pointType, Long pointAmount, boolean manualFlag, Long pointExpirationDt){
+        PointItem pointItem = PointItem.of(userPointInfo, pointEvent, pointType, pointAmount, manualFlag, pointExpirationDt, PointStatus.ACTIVE);
         return pointItemRepository.save(pointItem);
     }
 
     public PointItem getPointItem(Long pointItemKey){
         return pointItemRepository.findById(pointItemKey).orElseThrow(() -> new ApiException(ErrorCode.POINT_NOT_FOUND));
-    }
-
-    public PointItem setPointCancel(Long pointItemKey){
-        PointItem pointItem = getPointItem(pointItemKey);
-        pointItem.pointCancel();
-        return pointItem;
     }
 
     public List<PointItem> getPointItemList(String userId){
@@ -43,6 +37,10 @@ public class PointItemService {
     public List<PointItem> getPointItemListByUserIdActive(String userId){
         List<PointItem> pointItemList = pointItemRepository.findByUserIdAndPointStatus(userId, PointStatus.ACTIVE);
         return pointItemList != null ? pointItemList : new ArrayList<>();
+    }
+
+    public PointItem getPointItemRef(Long pointItemKey){
+        return pointItemRepository.getReferenceById(pointItemKey);
     }
 
 }

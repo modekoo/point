@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "정책이 존재하지 않습니다."),
-    POINT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 포인트가 존재하지 않습니다"),
+    POINT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 포인트가 존재하지 않습니다."),
+    POINT_USAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "주문에 연결된 최초 포인트 사용 내역이 없습니다."),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문이 존재하지 않습니다."),
     POLICY_OVER_EARN(HttpStatus.BAD_REQUEST, "1회 한도 적립 포인트를 초과했습니다."),
     POLICY_OVER_MAX(HttpStatus.BAD_REQUEST, "보유 적립 포인트를 초과했습니다."),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청값이 올바르지 않습니다."),

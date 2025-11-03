@@ -33,8 +33,9 @@ public class PointController {
         return ResponseEntity.ok(res);
     }
 
-    @PutMapping("/use/cancel")
-    public ResponseEntity<CommonResponseDto> useCancelPoint(){
+    @PostMapping("/use/cancel")
+    public ResponseEntity<CommonResponseDto<PointUseCancelResDto>> useCancelPoint(@RequestBody @Valid PointUseCancelReqDto pointUseCancelReqDto){
+        CommonResponseDto<PointUseCancelResDto> res = pointService.useCancelPoint(pointUseCancelReqDto);
         return ResponseEntity.ok(CommonResponseDto.success());
     }
 

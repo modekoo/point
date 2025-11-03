@@ -30,6 +30,7 @@ public interface PointItemRepository extends JpaRepository<PointItem, Long> {
          and pi.pointStatus = :pointStatus
        order by pi.manualFlag asc, pointExpirationDt asc
     """)
+    //and pi.pointExpirationDt >= now 고려필요
     List<PointItem> findByUserIdAndPointStatus(@Param("userId") String userId, @Param("pointStatus")PointStatus pointStatus);
 
 }

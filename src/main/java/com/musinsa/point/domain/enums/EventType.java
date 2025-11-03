@@ -1,5 +1,5 @@
 package com.musinsa.point.domain.enums;
 
 public enum EventType {
-    EARN, REEARN, USE, CANCELED, USE_CANCELED
+    EARN, RE_EARN, USE, CANCELED, USE_CANCELED
 }

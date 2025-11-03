@@ -7,6 +7,6 @@ import org.springframework.stereotype.Component;
 @Data
 @ConfigurationProperties(prefix = "point.earn")
 @Component
-public class PointEarnMode {
+public class PointMode {
     private String mode;
 }

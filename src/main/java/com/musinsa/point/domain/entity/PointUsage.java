@@ -1,6 +1,6 @@
 package com.musinsa.point.domain.entity;
 
-import com.musinsa.point.domain.enums.PointUsageStatus;
+import com.musinsa.point.domain.enums.PointUsageType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,31 +21,27 @@ public class PointUsage extends DateEntity{
             , foreignKey = @ForeignKey(name = "fk_point_usage_point_event_key"))
     private PointEvent pointEvent;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_key", nullable = false
             , foreignKey = @ForeignKey(name = "fk_point_usage_order_key"))
     private Order order;
 
-    @Column(name = "usage_amount")
-    private Long usageAmount;
-
-    @Column(name = "usage_balance")
-    private Long usageBalance;
+    @Column(name = "point_usage_amount")
+    private Long pointUsageAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "usage_status")
-    private PointUsageStatus pointUsageStatus;
+    @Column(name = "point_usage_type")
+    private PointUsageType pointUsageType;
 
-    public PointUsage(PointEvent pointEvent, Order order, Long usageAmount, Long usageBalance, PointUsageStatus pointUsageStatus) {
+    public PointUsage(PointEvent pointEvent, Order order, Long pointUsageAmount, PointUsageType pointUsageType) {
         this.pointEvent = pointEvent;
         this.order = order;
-        this.usageAmount = usageAmount;
-        this.usageBalance = usageBalance;
-        this.pointUsageStatus = pointUsageStatus;
+        this.pointUsageAmount = pointUsageAmount;
+        this.pointUsageType = pointUsageType;
     }
 
-    public static PointUsage of(PointEvent pointEvent, Order order, Long usageAmount, Long usageBalance, PointUsageStatus pointUsageStatus){
-        return new PointUsage(pointEvent, order, usageAmount, usageBalance, pointUsageStatus);
+    public static PointUsage of(PointEvent pointEvent, Order order, Long pointUsageAmount, PointUsageType pointUsageType){
+        return new PointUsage(pointEvent, order, pointUsageAmount, pointUsageType);
     }
 
 }
