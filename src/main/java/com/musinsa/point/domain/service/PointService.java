@@ -46,23 +46,17 @@ public class PointService {
         UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointEarnReqDTO.userId());
 
         //1회 한도 초과시 튕겨냄
-        if(pointEarnReqDTO.pointAmount() > pointPolicy.getPointEarnLimit()) {
-            log.info("요청 충전포인트 = {}, 1회 한도 제한 포인트 = {}", pointEarnReqDTO.pointAmount(), pointPolicy.getPointEarnLimit());
-            throw new ApiException(ErrorCode.POLICY_OVER_EARN);
-        }
+        long earnAmount = pointValidateModeService.validOverMaxEarnLimit(pointEarnReqDTO.pointAmount(), pointPolicy.getPointEarnLimit());
 
         //적립 금액 초과시 튕겨냄
-        if(userPointInfo.getPointTotalBalance() + pointEarnReqDTO.pointAmount() > pointPolicy.getPointEarnLimit()) {
-            log.info("요청 충전포인트 = {}, 포인트 잔액 = {}, 포인트 한도 = {}", pointEarnReqDTO.pointAmount(), userPointInfo.getPointTotalBalance(), pointPolicy.getPointEarnLimit());
-            throw new ApiException(ErrorCode.POLICY_OVER_MAX);
-        }
+        earnAmount = pointValidateModeService.validOverMaxLimit(earnAmount, userPointInfo.getPointTotalBalance(), pointPolicy.getPointTotalLimit());
 
         //잔액 추가
-        userPointInfo = userPointInfoService.setUserPointBalance(userPointInfo, pointEarnReqDTO.pointAmount());
+        userPointInfo = userPointInfoService.setUserPointBalance(userPointInfo, earnAmount);
         PointEvent pointEvent = pointEventService.createPointEvent(EventType.EARN, userPointInfo);
-        PointItem pointItem = pointItemService.createPointItem(userPointInfo, pointEvent, PointType.EARN, pointEarnReqDTO.pointAmount(), pointEarnReqDTO.manualFlag(), pointEarnReqDTO.pointExpirationDt());
+        PointItem pointItem = pointItemService.createPointItem(userPointInfo, pointEvent, PointType.EARN, earnAmount, pointEarnReqDTO.manualFlag(), pointEarnReqDTO.pointExpirationDt());
 
-        return CommonResponseDto.success(PointEarnResDto.of(pointItem.getPointItemKey(), pointItem.getPointAmount()
+        return CommonResponseDto.success(PointEarnResDto.of(pointItem.getPointItemKey(), pointEarnReqDTO.pointAmount(), earnAmount
                 , userPointInfo.getPointTotalBalance(), pointPolicy.getPointTotalLimit()));
     }
 
@@ -71,13 +65,12 @@ public class PointService {
         PointItem pointItem = pointItemService.getPointItem(pointCancelReqDto.pointItemKey());
         PointStatus pointStatus = pointItem.getPointStatus();
 
-        //적립취소시 event를 쌓아야하나
         if(pointStatus.isCanCancel()) {
             pointItem.setPointCancel();
             return CommonResponseDto.success(PointCancelResDto.from(pointItem));
         }
         else
-            return CommonResponseDto.fail(PointCancelResDto.from(pointItem), pointStatus.getMessage(), pointStatus.name());
+            return CommonResponseDto.fail(PointCancelResDto.from(pointItem), pointStatus.name(), pointStatus.getMessage());
     }
 
     /**
@@ -86,31 +79,32 @@ public class PointService {
      */
     @Transactional
     public CommonResponseDto<PointUseResDto> usePoint(PointUseReqDto pointUseReqDto){
-        //주문 쌓기
-        Order order = orderService.createOrder(pointUseReqDto.orderKey());
 
         //포인트 체크
-        //튕겨내야하나?
         UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointUseReqDto.userId());
-        if(userPointInfo.getPointTotalBalance() < pointUseReqDto.pointUseAmount()) throw new ApiException(ErrorCode.INVALID_REQUEST, "유저 포인트 잔액이 사용량 하려는 포인트보다 적습니다.");
+
+        long useAmount = pointValidateModeService.validUsePointOverBalance(pointUseReqDto.pointUseAmount(), userPointInfo.getPointTotalBalance());
+
+        //주문 쌓기
+        Order order = orderService.createOrder(pointUseReqDto.orderKey());
 
         //주문 이벤트
         PointEvent pointEvent = pointEventService.createPointEvent(EventType.USE, userPointInfo);
 
         //주문에 관한 포인트 사용량
-        PointUsage pointUsage = pointUsageService.createUsageByOrder(pointEvent, order, pointUseReqDto.pointUseAmount());
+        PointUsage pointUsage = pointUsageService.createUsageByOrder(pointEvent, order, useAmount);
 
         //주문에 관한 포인트 연결
         List<PointItem> pointItemList = pointItemService.getPointItemListByUserIdActive(userPointInfo.getUser().getUserId());
 
         //포인트 사용
         //화면에 뿌려줄 return값이 필요하다면
-        List pointUsageLinkList = pointUse(pointItemList, pointUsage, pointUseReqDto.pointUseAmount());
+        List pointUsageLinkList = pointUse(pointItemList, pointUsage, useAmount);
 
         //유저 포인트 총량 차감
-        userPointInfo.setTotalBalance(- pointUseReqDto.pointUseAmount());
+        userPointInfo.setTotalBalance(- useAmount);
         
-        return CommonResponseDto.success(PointUseResDto.of(order.getOrderKey(), pointUseReqDto.pointUseAmount(), userPointInfo.getPointTotalBalance()));
+        return CommonResponseDto.success(PointUseResDto.of(order.getOrderKey(), pointUseReqDto.pointUseAmount(), useAmount, userPointInfo.getPointTotalBalance()));
     }
 
     private <T>List<T> pointUse(List<PointItem> pointItemList, PointUsage pointUsage, Long pointUseAmount){
@@ -119,20 +113,15 @@ public class PointService {
         for(PointItem pointItem : pointItemList){
             if(pointToUse <= 0) break;
             else{
-                List<PointUsageLink> usedPointUsageLinkList = pointUsageLinkService.getPointUsageLinkListByPointItemKey(pointItem.getPointItemKey());
-                long usedSum = 0;
-                //이미 사용중이라면(pointUsageLink에 있다면)
-                if(usedPointUsageLinkList != null && !usedPointUsageLinkList.isEmpty()){
-                    //이미 사용중인 포인트량 체크
-                    usedSum = usedPointUsageLinkList.stream().mapToLong(PointUsageLink::getPointUsageAmount).sum();
-                }
+                List<PointUsageLink> usedPointUsageLinkList = pointItem.getPointUsageLinkList();
+                long usedSum = usedPointUsageLinkList != null ? usedPointUsageLinkList.stream().mapToLong(PointUsageLink::getPointUsageAmount).sum() : 0;
                 long useAblePoint = Math.min(pointItem.getPointAmount() - usedSum, pointToUse); //사용할 포인트가 해당 포인트보다 작을 때 고려
+
                 //PointItem이 차감 후에도 여분의 포인트를 가지고 있을 때 status는 일단 'active' 그대로 사용
                 if(pointToUse > pointItem.getPointAmount() - usedSum) pointItem.setPointUsed();
 
                 pointToUse -= useAblePoint;
                 PointUsageLink pointUsageLink = pointUsageLinkService.createPointUsageLink(pointUsage, pointItem, useAblePoint);
-//                pointUsageLinkList.add(pointUsageLinkService.createPointUsageLink(pointUsage, pointItem, useAblePoint));
             }
         }
         return pointUsageLinkList;
@@ -147,14 +136,15 @@ public class PointService {
         PointPolicy pointPolicy = pointPolicyService.getUserPolicy(pointUseCancelReqDto.userId());
         UserPointInfo userPointInfo = pointPolicy.getUserPointInfo();
 
-        //취소액 + 잔액이 > 적립한계치 튕겨내야하나?
-        if(userPointInfo.getPointTotalBalance() + pointUseCancelReqDto.pointCancelAmount() > pointPolicy.getPointTotalLimit()) throw new ApiException(ErrorCode.INVALID_REQUEST, "포인트 취소 시 유저 포인트 최대치를 초과합니다.");
+        //취소액 + 잔액이 > 적립한계치보다 클 경우
+        long cancelPoint = pointValidateModeService.validCancelPointOverTotalPoint(pointUseCancelReqDto.pointCancelAmount(), userPointInfo.getPointTotalBalance(), pointPolicy.getPointTotalLimit());
 
         //주문번호로 header, 부분취소 row화 하기로 하여 List로
         List<PointUsage> pointUsageList = pointUsageService.getPointUsageByOrderKey(pointUseCancelReqDto.orderKey());
         long pointUsedSum = pointUsageList.stream().mapToLong(PointUsage::getPointUsageAmount).sum();
+
         //취소액이 주문에 사용한 포인트보다 클 경우
-        if(pointUseCancelReqDto.pointCancelAmount() > pointUsedSum) throw new ApiException(ErrorCode.INVALID_REQUEST, "주문에 사용한 포인트를 초과하여 취소할 수 없습니다.");
+        cancelPoint = pointValidateModeService.validCancelPointOverUsedPoint(cancelPoint, pointUsedSum);
 
         //최초 주문관련 포인트 사용 원장
         PointUsage pointUsage = pointUsageList.stream()
@@ -168,15 +158,15 @@ public class PointService {
         //이벤트 등록
         PointEvent useCancelPointEvent = pointEventService.createPointEvent(EventType.USE_CANCELED, userPointInfo);
         //취소원장 등록(-)
-        PointUsage useCancelPointUsage = pointUsageService.createUsageByOrder(useCancelPointEvent, pointUsage.getOrder(), -pointUseCancelReqDto.pointCancelAmount());
+        PointUsage useCancelPointUsage = pointUsageService.createUsageByOrder(useCancelPointEvent, pointUsage.getOrder(), -cancelPoint);
 
-        //포인트 부분취소(완전취소는 Order와 협의, status 등)
+        //포인트 부분취소(완전취소처럼 값을 맞춰서 쓸수는 있으나 order cancel등의 API 추가가 유효)
         //화면에 뿌려줄 return이 필요하다면
-        List resultList = pointUseCancel(pointUseCancelReqDto.pointCancelAmount(), cancelablePointList, userPointInfo, useCancelPointUsage);
+        List resultList = pointUseCancel(cancelPoint, cancelablePointList, userPointInfo, useCancelPointUsage);
 
         //사용자 포인트 추가(userPointInfo)
-        userPointInfo.setTotalBalance(pointUseCancelReqDto.pointCancelAmount());
-        return CommonResponseDto.success(new PointUseCancelResDto(useCancelPointUsage.getOrder().getOrderKey(), pointUseCancelReqDto.pointCancelAmount(), userPointInfo.getPointTotalBalance()));
+        userPointInfo.setTotalBalance(cancelPoint);
+        return CommonResponseDto.success(new PointUseCancelResDto(useCancelPointUsage.getOrder().getOrderKey(), pointUseCancelReqDto.pointCancelAmount(), cancelPoint, userPointInfo.getPointTotalBalance()));
     }
 
     private <T>List<T> pointUseCancel(Long cancelTotalReqAmount, List<CancelablePointDto> cancelablePointList, UserPointInfo userPointInfo, PointUsage useCancelPointUsage){
@@ -201,13 +191,14 @@ public class PointService {
                 usedPointItem.setPointActive();
             }
 
-            //조회없이 기존포인트 연결만
+            //조회없이 기존포인트 연결 위한 pointRef
             PointItem pointItemRef  = pointItemService.getPointItemRef(cancelablePointDto.pointItemKey());
-            //포인트 사용량 음수 등록
-            //화면에 리턴이 필요할경우 dto변환후 resultList.add 등
+            //포인트 사용취소 음수 등록
+            //사용취소 부분은 만료처리된 pointItem에 붙여야하는지
             PointUsageLink useCancelPointUsageLink = pointUsageLinkService.createPointUsageLink(useCancelPointUsage, pointItemRef, -cancelAmount);
             cancelTotalAmount -= cancelAmount;
         }
+        //화면에 리턴이 필요할경우 dto변환후 resultList.add 등
         return resultList;
     }
 

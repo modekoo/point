@@ -15,7 +15,9 @@ public enum ErrorCode {
     POLICY_OVER_EARN(HttpStatus.BAD_REQUEST, "1회 한도 적립 포인트를 초과했습니다."),
     POLICY_OVER_MAX(HttpStatus.BAD_REQUEST, "보유 적립 포인트를 초과했습니다."),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청값이 올바르지 않습니다."),
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
+
+    LOCK_ERROR(HttpStatus.CONFLICT, "동시 처리에 문제가 생겼습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

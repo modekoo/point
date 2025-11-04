@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -28,6 +30,9 @@ public class PointItem extends DateEntity{
     @JoinColumn(name = "point_event_key", nullable = false
                 , foreignKey = @ForeignKey(name = "fk_point_item_point_event_key"))
     private PointEvent pointEvent;
+
+    @OneToMany(mappedBy = "pointItem", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PointUsageLink> pointUsageLinkList;
 
     @Column(name = "point_amount")
     private Long pointAmount;

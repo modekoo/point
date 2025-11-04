@@ -11,6 +11,8 @@ public record PointUseCancelResDto (
         @NotBlank
         String orderKey,
         @NotNull @Positive
+        Long reqPointUseCancelAmount,
+        @NotNull @Positive
         Long pointUseCancelAmount,
         @NotNull @Positive
         Long balancePoint

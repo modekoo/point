@@ -1,5 +1,8 @@
 package com.musinsa.point.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ApiException extends RuntimeException{
 
     private final ErrorCode errorCode;
@@ -13,4 +16,5 @@ public class ApiException extends RuntimeException{
         super(message);
         this.errorCode = errorCode;
     }
+
 }

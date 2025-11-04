@@ -1,15 +1,10 @@
 package com.musinsa.point;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.musinsa.point.domain.dto.Point.*;
-import com.musinsa.point.domain.dto.pointPolicy.PointPolicyReqDto;
 import com.musinsa.point.domain.entity.*;
 import com.musinsa.point.domain.enums.PointStatus;
-import com.musinsa.point.domain.repository.PointUsageRepository;
-import com.musinsa.point.domain.repository.UserPointRepository;
-import com.musinsa.point.domain.repository.pointUsageLink.PointUsageLinkRepository;
 import com.musinsa.point.domain.service.*;
 import com.musinsa.point.dto.CommonResponseDto;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +15,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Collections;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -37,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Transactional
 class PointTests {
 
     @Autowired
@@ -51,59 +41,86 @@ class PointTests {
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
-    UserPointRepository userPointRepository;
-    @Autowired
     PointUsageLinkService pointUsageLinkService;
     @Autowired
     PointUsageService pointUsageService;
-    @Autowired
-    PointUsageLinkRepository pointUsageLinkRepository;
 
-    @BeforeEach
+    @BeforeAll
     public void setup() throws Exception {
-        userPointRepository.deleteAll();
-        String reqJsonStr = """
-                {"userId":"koo"}
-                """;
+        createUser("koo");
+    }
+
+    private void createUser(String userId) throws Exception{
+        User user = User.of(userId);
+        String reqJsonStr = objectMapper.writeValueAsString(user);
+
         mockMvc.perform(post("/users")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(reqJsonStr)
         ).andExpect(status().isOk());
     }
 
+    private Long pointEarn(String userId, Long pointAmount) throws Exception{
+        PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of(userId, pointAmount);
+        String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
+        MvcResult result = mockMvc.perform(post("/point/earn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(reqJsonStr)
+        ).andExpect(status().isOk()).andReturn();
+        String resultStr = result.getResponse().getContentAsString();
+        CommonResponseDto<PointEarnResDto> responseDto = objectMapper.readValue(resultStr, new TypeReference<CommonResponseDto<PointEarnResDto>>(){});
+        return responseDto.getResult().pointItemKey();
+    }
+
+    private void pointUse(String orderKey, Long pointUseAmount, String userId) throws Exception{
+        PointUseReqDto pointUseReqDto = PointUseReqDto.of(orderKey, pointUseAmount, userId);
+        String reqJsonStr = objectMapper.writeValueAsString(pointUseReqDto);
+        mockMvc.perform(post("/point/use")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(reqJsonStr)
+        ).andExpect(status().isOk());
+    }
+
+    private void pointCancel(String orderKey, Long pointCancelAmount, String userId) throws Exception{
+        PointUseCancelReqDto pointUseCancelReqDto = PointUseCancelReqDto.of(orderKey, pointCancelAmount, userId);
+        String reqJson = objectMapper.writeValueAsString(pointUseCancelReqDto);
+
+        mockMvc.perform(post("/point/use/cancel")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(reqJson)
+        ).andExpect(status().isOk());
+    }
+
     @Nested
     class pointEarn {
 
+        @Transactional
         @Test
         void setPointEarnTest() throws Exception {
-            PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of("koo", 2000L);
-            UserPointInfo beforeUserPointInfo = userPointInfoService.getUserPointInfo(pointEarnReqDto.userId());
-            PointPolicy policy = pointPolicyService.getUserPolicy(pointEarnReqDto.userId());
+            String userId = "koo";
+            Long pointAmount = 2000L;
+
+            UserPointInfo beforeUserPointInfo = userPointInfoService.getUserPointInfo(userId);
+            PointPolicy policy = pointPolicyService.getUserPolicy(userId);
 
             long beforeUserPointEarnLimit = policy.getPointEarnLimit();
             long beforeUserPointBalance = beforeUserPointInfo.getPointTotalBalance();
 
-            String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
-            log.debug("reqJsonStr = {}", reqJsonStr);
+            pointEarn(userId, pointAmount);
 
-            mockMvc.perform(post("/point/earn")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr)
-            ).andExpect(status().isOk());
-
-            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointEarnReqDto.userId());
+            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(userId);
 
             log.debug("1회 한도 금액 = {},", beforeUserPointEarnLimit);
             log.debug("이전 잔여 금액 = {}", beforeUserPointBalance);
 
             //이전 금액과 비교 balance
-            Assertions.assertEquals(userPointInfo.getPointTotalBalance(), beforeUserPointBalance + pointEarnReqDto.pointAmount());
-            List<PointItem> pointItemList = pointItemService.getPointItemList(pointEarnReqDto.userId());
+            Assertions.assertEquals(userPointInfo.getPointTotalBalance(), beforeUserPointBalance + pointAmount);
+            List<PointItem> pointItemList = pointItemService.getPointItemList(userId);
 
             if (CollectionUtils.isEmpty(pointItemList))
                 Assertions.fail();
 
-            Assertions.assertEquals(pointItemList.getFirst().getPointAmount(), pointEarnReqDto.pointAmount());
+            Assertions.assertEquals(pointItemList.getFirst().getPointAmount(), pointAmount);
         }
     }
 
@@ -111,24 +128,16 @@ class PointTests {
     class PointCancel{
 
         Long pointItemKey;
+        Long pointItemKey2;
 
+        @Transactional
         @BeforeEach
         public void setup() throws Exception {
-            PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of("koo", 2000L);
-            String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
-            log.debug("reqJsonStr = {}", reqJsonStr);
-
-            MvcResult result = mockMvc.perform(post("/point/earn")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr)
-            ).andExpect(status().isOk()).andReturn();
-
-            String resultStr = result.getResponse().getContentAsString();
-            CommonResponseDto<PointEarnResDto> responseDto = objectMapper.readValue(resultStr, new TypeReference<CommonResponseDto<PointEarnResDto>>(){});
-            pointItemKey = responseDto.getResult().pointItemKey();
-            log.debug("pointItemKey = {}", pointItemKey);
+            pointItemKey = pointEarn("koo", 1000L);
+            pointItemKey2 = pointEarn("koo", 2000L);
         }
 
+        @Transactional
         @Test
         void setPointCancelTest() throws Exception {
             log.debug("pointItemKey = {}", pointItemKey);
@@ -142,49 +151,35 @@ class PointTests {
 
             PointItem pointItem = pointItemService.getPointItem(pointCancelReqDto.pointItemKey());
             log.debug("point satatus = {}", pointItem.getPointStatus().name());
-
             Assertions.assertEquals(PointStatus.CANCELED, pointItem.getPointStatus());
         }
     }
 
     @Nested
     class PointUse{
+        @Transactional
         @BeforeEach
         public void setup() throws Exception {
-            PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of("koo", 2000L);
-            String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
-
-            mockMvc.perform(post("/point/earn")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr)
-            ).andExpect(status().isOk());
-
-            PointEarnReqDto pointEarnReqDto2 = PointEarnReqDto.of("koo", 1000L);
-            String reqJsonStr2 = objectMapper.writeValueAsString(pointEarnReqDto2);
-
-            mockMvc.perform(post("/point/earn")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr2)
-            ).andExpect(status().isOk());
+            pointEarn("koo", 1000L);
+            pointEarn("koo", 2000L);
         }
 
+        @Transactional
         @Test
         public void pointUseTest() throws Exception {
-            PointUseReqDto pointUseReqDto = PointUseReqDto.of("test001", 2500L, "koo");
-            String reqJsonStr = objectMapper.writeValueAsString(pointUseReqDto);
+            String orderKey = "test001";
+            String userId = "koo";
+            Long pointUseAmount = 2000L;
 
-            UserPointInfo beforeUserPointInfo = userPointInfoService.getUserPointInfo(pointUseReqDto.userId());
+            UserPointInfo beforeUserPointInfo = userPointInfoService.getUserPointInfo(userId);
             log.debug("이전 포인트 잔량 = {}", beforeUserPointInfo.getPointTotalBalance());
 
-            mockMvc.perform(post("/point/use")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr)
-            ).andExpect(status().isOk());
+            pointUse(orderKey, pointUseAmount, userId);
 
-            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointUseReqDto.userId());
+            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(userId);
             log.debug("포인트 잔량 = {}", userPointInfo.getPointTotalBalance());
 
-            List<PointUsageLink> pointUsageLinkList = pointUsageLinkService.getPointUsageLinkListByOrderKey(pointUseReqDto.orderKey());
+            List<PointUsageLink> pointUsageLinkList = pointUsageLinkService.getPointUsageLinkListByOrderKey(orderKey);
             long usedPointTotal = pointUsageLinkList.stream().mapToLong(PointUsageLink::getPointUsageAmount).sum();
             log.debug("포인트 사용량 = {}", usedPointTotal);
 
@@ -193,55 +188,35 @@ class PointTests {
                 log.debug("usageLinkId = {}, pointItemKey = {}, pointItemAmount = {}, usageLinkAmount = {}, pointItemStatus = {}"
                         , pointUsageLink.getPointUsageLinkKey(), pointItem.getPointItemKey(), pointItem.getPointAmount(), pointUsageLink.getPointUsageAmount(), pointItem.getPointStatus());
             }
-            Assertions.assertEquals(pointUseReqDto.pointUseAmount(), usedPointTotal);
+            Assertions.assertEquals(pointUseAmount, usedPointTotal);
         }
 
     }
 
     @Nested
     class PointUseCancel{
+        @Transactional
         @BeforeEach
         public void setup() throws Exception {
-            PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of("koo", 2000L);
-            String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
-
-            mockMvc.perform(post("/point/earn")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr)
-            ).andExpect(status().isOk());
-
-            PointEarnReqDto pointEarnReqDto2 = PointEarnReqDto.of("koo", 1000L);
-            String reqJsonStr2 = objectMapper.writeValueAsString(pointEarnReqDto2);
-
-            mockMvc.perform(post("/point/earn")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr2)
-            ).andExpect(status().isOk());
-
-            PointUseReqDto pointUseReqDto = PointUseReqDto.of("test001", 2500L, "koo");
-            String reqJsonStr3 = objectMapper.writeValueAsString(pointUseReqDto);
-
-            mockMvc.perform(post("/point/use")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJsonStr3)
-            ).andExpect(status().isOk());
+            pointEarn("koo", 1000L);
+            pointEarn("koo", 2000L);
+            pointUse("test001", 2500L, "koo");
         }
 
+        @Transactional
         @Test
-        public void pointUseCancel() throws Exception{
-            PointUseCancelReqDto pointUseCancelReqDto = PointUseCancelReqDto.of("test001", 2300L, "koo");
-            String reqJson = objectMapper.writeValueAsString(pointUseCancelReqDto);
+        public void pointUseCancelTest() throws Exception{
+            String orderKey = "test001";
+            String userId = "koo";
+            long pointCancelAmount = 2300;
 
-            mockMvc.perform(post("/point/use/cancel")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(reqJson)
-            ).andExpect(status().isOk());
+            pointCancel(orderKey, pointCancelAmount, userId);
 
-            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(pointUseCancelReqDto.userId());
+            UserPointInfo userPointInfo = userPointInfoService.getUserPointInfo(userId);
             log.debug("포인트 잔량 = {}", userPointInfo.getPointTotalBalance());
-            Assertions.assertEquals(1000+2000-2500+2300, userPointInfo.getPointTotalBalance());
+            Assertions.assertEquals(1000+2000-2500+pointCancelAmount, userPointInfo.getPointTotalBalance());
 
-            List<PointUsage> pointUsageList = pointUsageService.getPointUsageByOrderKey(pointUseCancelReqDto.orderKey());
+            List<PointUsage> pointUsageList = pointUsageService.getPointUsageByOrderKey(orderKey);
             for(PointUsage pointUsage : pointUsageList){
                 log.debug("pointUsageKey = {}, pointUsageType = {}, pointUsageAmount = {}", pointUsage.getPointUsageKey(), pointUsage.getPointUsageType(), pointUsage.getPointUsageAmount());
             }
@@ -249,7 +224,7 @@ class PointTests {
             log.debug("해당 주문에 사용한 포인트 양(header) = {}", pointUsageSum);
             Assertions.assertEquals(200L, pointUsageSum);
 
-            List<PointUsageLink> pointUsageLinkList = pointUsageLinkService.getPointUsageLinkListByOrderKey(pointUseCancelReqDto.orderKey());
+            List<PointUsageLink> pointUsageLinkList = pointUsageLinkService.getPointUsageLinkListByOrderKey(orderKey);
             for(PointUsageLink pointUsageLink : pointUsageLinkList){
                 log.debug("pointItemKey = {}, pointStatus = {}, pointAmount = {}, pointUsageLinkKey = {}, pointUsageLinkAmount = {}"
                         , pointUsageLink.getPointItem().getPointItemKey(), pointUsageLink.getPointItem().getPointStatus(), pointUsageLink.getPointItem().getPointAmount()
