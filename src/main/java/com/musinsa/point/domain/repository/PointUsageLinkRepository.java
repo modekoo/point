@@ -1,4 +1,4 @@
-package com.musinsa.point.domain.repository.pointUsageLink;
+package com.musinsa.point.domain.repository;
 
 import com.musinsa.point.domain.dto.pointUsageLink.CancelablePointDto;
 import com.musinsa.point.domain.entity.PointUsageLink;

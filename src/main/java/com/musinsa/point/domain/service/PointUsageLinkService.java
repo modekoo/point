@@ -4,7 +4,7 @@ import com.musinsa.point.domain.dto.pointUsageLink.CancelablePointDto;
 import com.musinsa.point.domain.entity.PointItem;
 import com.musinsa.point.domain.entity.PointUsage;
 import com.musinsa.point.domain.entity.PointUsageLink;
-import com.musinsa.point.domain.repository.pointUsageLink.PointUsageLinkRepository;
+import com.musinsa.point.domain.repository.PointUsageLinkRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

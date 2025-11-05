@@ -72,6 +72,19 @@ class PointTests {
         return responseDto.getResult().pointItemKey();
     }
 
+    private CommonResponseDto pointEarnValid(String userId, Long pointAmount) throws Exception{
+        PointEarnReqDto pointEarnReqDto = PointEarnReqDto.of(userId, pointAmount);
+        String reqJsonStr = objectMapper.writeValueAsString(pointEarnReqDto);
+        MvcResult result = mockMvc.perform(post("/point/earn")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(reqJsonStr)
+        ).andReturn();
+        log.debug("mockMvc resultHttpStatus = {}", result.getResponse().getStatus());
+        String resultStr = result.getResponse().getContentAsString();
+        CommonResponseDto<PointEarnResDto> responseDto = objectMapper.readValue(resultStr, new TypeReference<CommonResponseDto<PointEarnResDto>>(){});
+        return responseDto;
+    }
+
     private void pointUse(String orderKey, Long pointUseAmount, String userId) throws Exception{
         PointUseReqDto pointUseReqDto = PointUseReqDto.of(orderKey, pointUseAmount, userId);
         String reqJsonStr = objectMapper.writeValueAsString(pointUseReqDto);
@@ -121,6 +134,14 @@ class PointTests {
                 Assertions.fail();
 
             Assertions.assertEquals(pointItemList.getFirst().getPointAmount(), pointAmount);
+        }
+        @Test
+        void validEarnPointTest() throws Exception {
+            String userId = "koo";
+            Long pointAmount = 11112000L;
+
+            CommonResponseDto res = pointEarnValid(userId, pointAmount);
+            log.debug(res.getMessage());
         }
     }
 
