@@ -1,19 +1,23 @@
 package com.musinsa.point.exception;
 
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import com.musinsa.point.dto.CommonResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @Slf4j
 //@Order(Ordered.HIGHEST_PRECEDENCE) handler 여러개 있을 시 순서 지정
+//ResponseEntityExceptionHandler 필요한 Exception만 overring 또는 상속을 풀고 직접 수기 작성
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     //내부 커스텀 Exception
     @ExceptionHandler(ApiException.class)
@@ -24,8 +28,11 @@ public class GlobalExceptionHandler {
     }
 
     //@valid 등 Exception 처리
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<CommonResponseDto> handleValidException(MethodArgumentNotValidException ex){
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+
         log.error("MethodArgumentNotValidException");
         String msg = ErrorCode.INVALID_REQUEST.getMessage();
         if(ex.getAllErrors().stream().findFirst().isPresent())
