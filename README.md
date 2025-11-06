@@ -46,19 +46,19 @@ musinsa.point.exception # 에러처리 관련
 5.   테스트데이터   
 /resouces/postman/Point.postman_test_collection.json 에 postman으로 사용할 컬렉션있습니다.   
 
-| 기능        | Method | Endpoint            | Request                                                                 |
-|-----------|--------|---------------------|-------------------------------------------------------------------------|
-| 사용자 생성    | POST   | `/users`            | `{ "userId": "koo" }`                                                   |
-| 포인트 적립    | POST   | `/point/earn`       | `{ "userId": "koo", "pointAmount": 2000 }`                              |
-| 포인트 취소    | PUT    | `/point/cancel`      | `{ "pointItemKey": 1}`                                                   |
-| 포인트 사용    | POST   | `/point/use`        | `{ "orderKey": "ORD001", "pointUseAmount": 1500, "userId": "koo" }`     |
-| 포인트 사용 취소 | POST   | `/point/use/cancel` | `{ "orderKey": "ORD001", "pointCancelAmount": 1000, "userId": "koo" }`  |
-| 정책 변경     | PUT    | `/point/policy`     | `{ "userId": "koo", "pointEarnLimit": 3000, "pointTotalLimit": 50000 }` |
+| 기능          | Method | Endpoint            | Request                                                                 |
+|---------------|--------|--------------------|-------------------------------------------------------------------------|
+| 사용자 생성    | POST   | /users             | { "userId": "koo" }                                                    |
+| 포인트 적립    | POST   | /point/earn        | { "userId": "koo", "pointAmount": 2000 }                               |
+| 포인트 취소    | PUT    | /point/cancel      | { "pointItemKey": 1}                                                   |
+| 포인트 사용    | POST   | /point/use         | { "orderKey": "ORD001", "pointUseAmount": 1500, "userId": "koo" }      |
+| 포인트 사용 취소| POST  | /point/use/cancel   | { "orderKey": "ORD001", "pointCancelAmount": 1000, "userId": "koo" }   |
+| 정책 변경      | PUT    | /point/policy      | { "userId": "koo", "pointEarnLimit": 3000, "pointTotalLimit": 50000 }  |
 ```
 ```
 6.  AWS는 제가 실무에 사용해보지 못하여 더존에서 사용한 뉴타닉스기반 VM 클라우드, 하나은행 오픈쉬프트k8s를 참고했습니다.   
 ```
 ```
-7.  좋은 과제를 진행할 수 있어 행복했습니다. 문제가 몇 안되지만 많은 고민을 할 수 있었습니다. 읽어 주셔서 감사합니다.
+7.  좋은 과제를 진행할 수 있어 행복했습니다. 많은 고민을 할 수 있었습니다. 읽어 주셔서 감사합니다.
     구지경 드림.
 ```
