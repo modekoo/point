@@ -4,6 +4,8 @@
 
 1. 빌드/실행 방법   
   -> git clone https://github.com/modekoo/point   
+  -> cd point   
+  -> chmod +x ./gradlew
   -> git checkout dev   
   -> git pull origin dev  
   -> ./gradlew build clean   
@@ -31,8 +33,8 @@ musinsa.point.exception - 에러처리 관련
 1)정책을 table화 하여 분리하고 cache를 적용했습니다. Redis에도 적합합니다.
 2)userPointInfo는 포인트를 관리하는 master로서 lock이 필요해보여 @version을 두었습니다.  
 중복거래를 판별할수있는 key가 있으면 좋을 것 같습니다.  
-3)진입 데이터는 reqDto로 칭하며, spring-validation을 이용한 가벼운 @valid를 걸었습니다.  
-4)응답은 CommonResponseDto로 모든 응답은 같은 구조로 응답합니다.(error포함)    
+3)진입 데이터는 reqDto로 칭하며, spring-validation을 이용한 @valid를 걸었습니다.  
+4)CommonResponseDto로 모든 응답은 같은 구조로 처리됩니다.(error포함)    
 5)전역 ExceptionHandler를 두어 에러시에도 처리 후 응답값을 조립합니다.   
 5)서비스에서 금액적으로 validation해야하는 부분이 있어 mode를 'SOFT', 'HARD'로 구분해봤습니다.   
 -> HARD 일경우 최대충전금액 등 validation으로 튕겨내며 SOFT일경우 최대충전금액까지 충전하거나 

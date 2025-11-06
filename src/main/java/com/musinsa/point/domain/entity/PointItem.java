@@ -75,6 +75,10 @@ public class PointItem extends DateEntity{
         this.pointStatus = PointStatus.USED;
     }
 
+    public void setPointExpired(){
+        this.pointStatus = PointStatus.EXPIRED;
+    }
+
     public void setPointActive(){
         this.pointStatus = PointStatus.ACTIVE;
     }
