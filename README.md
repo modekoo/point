@@ -1,50 +1,73 @@
-# point
+# Point Service
 
-```
-1. 빌드/실행 방법   
-  -> git clone https://github.com/modekoo/point   
-  -> cd point   
-  -> chmod +x ./gradlew
-  -> git checkout dev   
-  -> git pull origin dev  
-  -> ./gradlew build clean   
-  -> ./gradlew bootrun
-```
-```
-2. DB 설계  
-1)User(유저), order(주문)  //타도메인  
-2)user_point_info(계정과 연결된 포인트 관리)  
-3)point_evet(포인트 관련 이벤트)  
-4)point_item(포인트들)   
-5)point_usage(order에 대한 포인트 사용 내역, header)  
-6)point_usage_link(실제 포인트 사용 내역)
-```
-```
-3. 프로젝트 구조   
-musinsa.point.config    # cache, mode설정   
-musinsa.point.consts    # 프로젝트 고정값   
-musinsa.point.domain    # 도메인 서비스(controller, service, entity, repo...)   
-musinsa.point.dto       # 공통처리DTO   
-musinsa.point.exception # 에러처리 관련
-```
-```
-4. 서비스 설계   
- 1) 정책을 table화 하여 분리하고 cache를 적용했습니다. 
-  -> Redis에도 적합합니다.
- 2) userPointInfo는 포인트를 관리하는 master로서 lock이 필요해보여 @version을 두었습니다.  
-    중복거래를 판별할수있는 key가 있으면 좋을 것 같습니다.  
- 3) 진입 데이터는 reqDto로 칭하며, spring-validation을 이용한 @valid를 걸었습니다.  
- 4) CommonResponseDto로 모든 응답은 같은 구조로 처리됩니다.(error포함)    
- 5) 전역 ExceptionHandler를 두어 에러시에도 처리 후 응답값을 조립합니다.
- -> -> 현재는 기본 ResponseEntityExceptionHandler를 상속하여 부분 적용이 되어있습니다.   
- 5) 서비스에서 금액적으로 validation해야하는 부분이 있어 mode를 'SOFT', 'HARD'로 구분해봤습니다.   
- -> HARD 일경우 최대충전금액 등 validation으로 튕겨내며 SOFT일경우 최대충전금액까지 충전하거나 
-    1회한도 금액이 초과 시 1회한도 금액까지 충전등이 가능합니다.   
- 6) User, Order는 타도메인이지만 임시로 넣어두었습니다.
-```
-```
-5.   테스트데이터   
-/resouces/postman/Point.postman_test_collection.json 에 postman으로 사용할 컬렉션있습니다.   
+대량 트랜잭션 환경에서 포인트 적립/사용/취소 요청이 동시에 발생하더라도  
+정합성을 유지할 수 있도록 설계한 포인트 처리 시스템입니다.
+
+동시 요청으로 인한 중복 처리, 경쟁 상태, 부분 실패 상황을 고려하여  
+포인트 마스터/이벤트/사용 단위를 분리하고 추적 가능 구조로 설계했습니다.
+
+---
+
+## 핵심 문제
+포인트 시스템은 다음 문제가 자주 발생합니다.
+
+- 동시에 요청이 들어올 때 잔액 불일치
+- 동일 요청 중복 처리
+- 사용/취소 이력 추적 불가
+- 정책 변경 시 로직 수정 필요
+
+---
+
+## 해결 전략
+
+### 1. 포인트 상태 구조 분리
+- `user_point_info` → 사용자 포인트 마스터
+- `point_item` → 실제 포인트 단위
+- `point_usage` → 주문 단위 사용
+- `point_usage_link` → 실제 차감된 포인트 연결
+
+→ 잔액 / 사용내역 / 이벤트를 독립적으로 관리
+
+---
+
+### 2. 동시성 제어
+`user_point_info` 엔티티에 `@Version` 적용하여  
+낙관적 락 기반 경쟁 상태를 방지했습니다.
+
+---
+
+### 3. 멱등 처리 확장 가능 구조
+중복 거래 식별 키(transactionId 등)를 추가하면  
+재요청에도 동일 결과가 보장되도록 확장 가능한 구조로 설계했습니다.
+
+---
+
+### 4. 정책 분리 + 캐싱
+포인트 정책을 테이블로 분리하고 캐시 적용 가능 구조로 설계했습니다.  
+→ Redis 적용 시 조회 비용 감소
+
+---
+
+### 5. 일관된 응답 구조
+모든 API 응답은 `CommonResponseDto`로 통일하고  
+전역 ExceptionHandler로 오류 상황도 동일 포맷으로 반환합니다.
+
+---
+
+## DB 구조
+
+- user (외부 도메인)
+- order (외부 도메인)
+- user_point_info
+- point_event
+- point_item
+- point_usage
+- point_usage_link
+
+---
+
+##  테스트데이터   
+/resources/postman/Point.postman_test_collection.json 에 postman으로 사용할 컬렉션있습니다.   
 
 | 기능          | Method | Endpoint            | Request                                                                 |
 |---------------|--------|--------------------|-------------------------------------------------------------------------|
@@ -54,11 +77,16 @@ musinsa.point.exception # 에러처리 관련
 | 포인트 사용    | POST   | /point/use         | { "orderKey": "ORD001", "pointUseAmount": 1500, "userId": "koo" }      |
 | 포인트 사용 취소| POST  | /point/use/cancel   | { "orderKey": "ORD001", "pointCancelAmount": 1000, "userId": "koo" }   |
 | 정책 변경      | PUT    | /point/policy      | { "userId": "koo", "pointEarnLimit": 3000, "pointTotalLimit": 50000 }  |
-```
-```
-6.  AWS는 제가 실무에 사용해보지 못하여 더존에서 사용한 뉴타닉스기반 VM 클라우드, 하나은행 오픈쉬프트k8s를 참고했습니다.   
-```
-```
-7.  좋은 과제를 진행할 수 있어 행복했습니다. 많은 고민을 할 수 있었습니다. 읽어 주셔서 감사합니다.
-    구지경 드림.
+
+---
+
+## 실행 방법
+```bash
+git clone https://github.com/modekoo/point
+cd point
+chmod +x ./gradlew
+git checkout dev
+git pull origin dev
+./gradlew clean build
+./gradlew bootrun
 ```
